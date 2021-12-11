@@ -1,9 +1,11 @@
 use std::fs;
 
 mod day01;
+mod day02;
+mod intcode;
 
 fn main() {
-    for day in 1..=1 {
+    for day in 1..=2 {
         let input_filename = format!("inputs/{:02}.txt", day);
         let input = fs::read_to_string(input_filename).unwrap();
         let (part_1, part_2) = get_day(day);
@@ -19,6 +21,7 @@ fn main() {
 fn get_day(day: u8) -> (DayFn, DayFn) {
     match day {
         1 => (day01::part_1, day01::part_2),
+        2 => (day02::part_1, day02::part_2),
         _ => panic!("Day {} not implemented", day),
     }
 }
