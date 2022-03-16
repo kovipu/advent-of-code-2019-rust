@@ -8,88 +8,58 @@ pub fn execute(program: &mut Vec<i32>, input: &[i32]) -> Vec<i32> {
         let instruction = program[pointer];
 
         let opcode: i32 = instruction % 100;
+
+        if opcode == 99 {
+            break;
+        }
+
         let immediate_mode_a: bool = instruction / 100 % 10 == 1;
         let immediate_mode_b: bool = instruction / 1000 % 10 == 1;
-        let _immediate_mode_c: bool = instruction / 10000 % 10 == 1;
+
+        let a: i32 = if immediate_mode_a {
+            program[pointer + 1]
+        } else {
+            program[program[pointer + 1] as usize]
+        };
+
+        // handle special opcodes here
+        if opcode == 3 {
+            // input
+            let value = input[input_pointer];
+            input_pointer += 1;
+
+            let write_addr = program[pointer + 1] as usize;
+            program[write_addr] = value;
+            pointer += 2;
+            continue;
+        } else if opcode == 4 {
+            // output
+            output.push(a);
+            pointer += 2;
+            continue;
+        }
+
+        let b: i32 = if immediate_mode_b {
+            program[pointer + 2]
+        } else {
+            program[program[pointer + 2] as usize]
+        };
+
+        let c: usize = program[pointer + 3] as usize;
 
         match opcode {
             1 => {
                 // addition
-                let a = if immediate_mode_a {
-                    program[pointer + 1]
-                } else {
-                    program[program[pointer + 1] as usize]
-                };
-
-                let b = if immediate_mode_b {
-                    program[pointer + 2]
-                } else {
-                    program[program[pointer + 2] as usize]
-                };
-
-                let write_addr = program[pointer + 3] as usize;
-
-                program[write_addr] = a + b;
-
+                program[c] = a + b;
                 pointer += 4;
             }
             2 => {
                 // multiplication
-                let a = if immediate_mode_a {
-                    program[pointer + 1]
-                } else {
-                    program[program[pointer + 1] as usize]
-                };
-
-                let b = if immediate_mode_b {
-                    program[pointer + 2]
-                } else {
-                    program[program[pointer + 2] as usize]
-                };
-
-                let write_addr = program[pointer + 3] as usize;
-
-                program[write_addr] = a * b;
-
+                program[c] = a * b;
                 pointer += 4;
-            }
-            3 => {
-                // input
-                let a = input[input_pointer];
-                input_pointer += 1;
-
-                let write_addr = program[pointer + 1] as usize;
-
-                program[write_addr] = a;
-
-                pointer += 2;
-            }
-            4 => {
-                // output
-                let a = if immediate_mode_a {
-                    program[pointer + 1]
-                } else {
-                    program[program[pointer + 1] as usize]
-                };
-
-                output.push(a);
-
-                pointer += 2;
             }
             5 => {
                 // jump-if-true
-                let a = if immediate_mode_a {
-                    program[pointer + 1]
-                } else {
-                    program[program[pointer + 1] as usize]
-                };
-
-                let b = if immediate_mode_b {
-                    program[pointer + 2]
-                } else {
-                    program[program[pointer + 2] as usize]
-                };
-
                 if a != 0 {
                     pointer = b as usize;
                 } else {
@@ -98,18 +68,6 @@ pub fn execute(program: &mut Vec<i32>, input: &[i32]) -> Vec<i32> {
             }
             6 => {
                 // jump-if-false
-                let a = if immediate_mode_a {
-                    program[pointer + 1]
-                } else {
-                    program[program[pointer + 1] as usize]
-                };
-
-                let b = if immediate_mode_b {
-                    program[pointer + 2]
-                } else {
-                    program[program[pointer + 2] as usize]
-                };
-
                 if a == 0 {
                     pointer = b as usize;
                 } else {
@@ -118,53 +76,28 @@ pub fn execute(program: &mut Vec<i32>, input: &[i32]) -> Vec<i32> {
             }
             7 => {
                 // less than
-                let a = if immediate_mode_a {
-                    program[pointer + 1]
-                } else {
-                    program[program[pointer + 1] as usize]
-                };
-
-                let b = if immediate_mode_b {
-                    program[pointer + 2]
-                } else {
-                    program[program[pointer + 2] as usize]
-                };
-
-                let write_addr = program[pointer + 3] as usize;
-
                 if a < b {
-                    program[write_addr] = 1;
+                    program[c] = 1;
                 } else {
-                    program[write_addr] = 0;
+                    program[c] = 0;
                 }
 
                 pointer += 4;
             }
             8 => {
                 // equals
-                let a = if immediate_mode_a {
-                    program[pointer + 1]
-                } else {
-                    program[program[pointer + 1] as usize]
-                };
-
-                let b = if immediate_mode_b {
-                    program[pointer + 2]
-                } else {
-                    program[program[pointer + 2] as usize]
-                };
-
-                let write_addr = program[pointer + 3] as usize;
-
                 if a == b {
-                    program[write_addr] = 1;
+                    program[c] = 1;
                 } else {
-                    program[write_addr] = 0;
+                    program[c] = 0;
                 }
 
                 pointer += 4;
             }
-            99 => break,
+            99 => {
+                dbg!("HALT");
+                break;
+            }
             _ => panic!("Unknown opcode: {}", opcode),
         }
     }
@@ -231,5 +164,12 @@ mod tests {
         let mut program = vec![3, 0, 99];
         execute(&mut program, &[42]);
         assert_eq!(program, vec![42, 0, 99]);
+    }
+
+    #[test]
+    fn test_output() {
+        let mut program = vec![4, 0, 99];
+        let output = execute(&mut program, &[]);
+        assert_eq!(output, vec![4]);
     }
 }
